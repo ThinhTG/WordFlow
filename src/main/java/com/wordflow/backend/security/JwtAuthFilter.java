@@ -25,36 +25,34 @@ public class JwtAuthFilter extends OncePerRequestFilter {
                                     FilterChain filterChain)
             throws ServletException, IOException {
 
-        // 1. Lấy header
+        // ✅ FIX: allow preflight request
+        if (request.getMethod().equalsIgnoreCase("OPTIONS")) {
+            filterChain.doFilter(request, response);
+            return;
+        }
+
         String authHeader = request.getHeader("Authorization");
 
-        // 2. Check Bearer token
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
             filterChain.doFilter(request, response);
             return;
         }
 
-        // 3. Extract token
         String token = authHeader.substring(7);
 
-        // 4. Validate token
         if (jwtService.isValidToken(token)) {
-
             String email = jwtService.extractEmail(token);
 
-            // 5. Tạo Authentication object
             UsernamePasswordAuthenticationToken auth =
                     new UsernamePasswordAuthenticationToken(
                             email,
                             null,
-                            Collections.emptyList() // chưa dùng role
+                            Collections.emptyList()
                     );
 
-            // 6. Set vào Security Context
             SecurityContextHolder.getContext().setAuthentication(auth);
         }
 
-        // 7. Continue filter chain
         filterChain.doFilter(request, response);
     }
 }
